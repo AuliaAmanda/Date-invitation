@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>A Date Invitation</title>
+<title>A Love Letter</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&display=swap" rel="stylesheet">
@@ -44,7 +44,13 @@ button:focus-visible{outline:3px solid var(--butter);outline-offset:3px}
 .options{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:0 auto 1.5rem}
 .opt{background:transparent;color:var(--ink);border:2px solid var(--soft);padding:.8rem 1.4rem;transition:background .2s,color .2s,border-color .2s}
 .opt:hover{background:var(--rose);color:var(--rose-ink);border-color:var(--rose)}
-@media (prefers-reduced-motion: reduce){#yes,#no,.opt{transition:none}}
+[hidden]{display:none!important}
+.beat{font-size:4rem;line-height:1;display:inline-block;margin-bottom:.75rem;animation:beat 1.2s ease-in-out infinite}
+@keyframes beat{0%,60%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}45%{transform:scale(1.18)}}
+.love{max-width:26rem;margin:0 auto 1.75rem;padding:1.25rem 1.5rem;background:rgba(255,255,255,.14);border:1px solid var(--soft);border-radius:18px;line-height:1.6;font-size:1.1rem;text-align:left;animation:rise .9s ease both .4s}
+.love small{display:block;margin-top:.75rem;color:var(--butter);text-align:right;font-size:1rem}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){#yes,#no,.opt{transition:none}.beat,.love{animation:none}}
 </style>
 </head>
 <body>
@@ -60,6 +66,7 @@ button:focus-visible{outline:3px solid var(--butter);outline-offset:3px}
   </section>
 
   <section id="done" class="screen" aria-live="polite">
+    <div class="beat" id="beat" aria-hidden="true" hidden>💖</div>
     <h1 id="thanks"></h1>
     <div id="pick">
       <p class="note" id="when"></p>
@@ -67,6 +74,7 @@ button:focus-visible{outline:3px solid var(--butter);outline-offset:3px}
     </div>
     <ul class="details" id="details"></ul>
     <p class="note" id="note"></p>
+    <p class="love" id="love" hidden><span id="loveText"></span><small id="sign"></small></p>
     <button id="reply" type="button" hidden>Tell me you're coming</button>
   </section>
 </main>
@@ -153,7 +161,7 @@ yes.addEventListener("click", () => {
 
 function choose(plan){
   $("pick").hidden = true;
-  $("thanks").textContent = "It's a plan.";
+  $("thanks").textContent = "It's a date!";
   $("details").innerHTML = "";
   [["When", CONFIG.date], ["Plan", plan]].forEach(([k, v]) => {
     const li = document.createElement("li");
@@ -162,6 +170,10 @@ function choose(plan){
     $("details").appendChild(li);
   });
   $("note").textContent = CONFIG.note;
+  $("beat").hidden = false;
+  $("loveText").textContent = CONFIG.loveNote;
+  $("sign").textContent = CONFIG.signature;
+  $("love").hidden = false;
   if (CONFIG.phone){
     const r = $("reply"); r.hidden = false;
     r.onclick = () => {
