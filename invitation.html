@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A question for you</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky-top:#1d1a45; --sky-bottom:#7a3b69; --ink:#fff6ea; --soft:#e9c9d8;
+  --rose:#ff7a93; --rose-ink:#3a0f23; --butter:#ffe3a1;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){--sky-top:#ffd9c7; --sky-bottom:#ff9db4; --ink:#3a0f23; --soft:#6b2c48; --rose:#d93a63; --rose-ink:#fff6ea; --butter:#fff1c9;}
+}
+:root[data-theme="light"]{--sky-top:#ffd9c7; --sky-bottom:#ff9db4; --ink:#3a0f23; --soft:#6b2c48; --rose:#d93a63; --rose-ink:#fff6ea; --butter:#fff1c9;}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;height:100%;overflow:hidden;color:var(--ink);
+  font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:linear-gradient(180deg,var(--sky-top),var(--sky-bottom));
+}
+main{height:100%;display:grid;place-items:center;padding:24px;text-align:center}
+.screen{max-width:34rem;display:none}
+.screen.on{display:block}
+.hello{font-size:1.05rem;color:var(--soft);margin:0 0 .75rem}
+h1{font-size:clamp(2.4rem,9vw,4.6rem);line-height:1.02;font-weight:800;letter-spacing:-.02em;margin:0 0 2rem}
+.row{display:flex;gap:16px;justify-content:center;align-items:center;min-height:64px}
+button{font:inherit;cursor:pointer;border:0;border-radius:999px;padding:.9rem 1.8rem;font-weight:700;font-size:1.1rem}
+button:focus-visible{outline:3px solid var(--butter);outline-offset:3px}
+#yes{background:var(--rose);color:var(--rose-ink);transition:transform .25s ease;transform:scale(var(--grow,1))}
+#no{background:transparent;color:var(--ink);border:2px solid var(--soft);transition:left .25s ease,top .25s ease}
+#no.free{position:fixed}
+.hint{min-height:1.6em;margin:1.5rem 0 0;color:var(--soft)}
+.details{margin:0 auto 1.75rem;padding:0;list-style:none;font-size:1.25rem;line-height:1.7}
+.details b{color:var(--butter)}
+.note{color:var(--soft);margin:0 0 1.75rem;font-size:1.05rem}
+.heart{position:fixed;top:-2rem;pointer-events:none;z-index:5;will-change:transform}
+.options{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:0 auto 1.5rem}
+.opt{background:transparent;color:var(--ink);border:2px solid var(--soft);padding:.8rem 1.4rem;transition:background .2s,color .2s,border-color .2s}
+.opt:hover{background:var(--rose);color:var(--rose-ink);border-color:var(--rose)}
+@media (prefers-reduced-motion: reduce){#yes,#no,.opt{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <section id="ask" class="screen on">
+    <p class="hello" id="hello"></p>
+    <h1 id="question"></h1>
+    <div class="row">
+      <button id="yes" type="button">Yes</button>
+      <button id="no" type="button">No</button>
+    </div>
+    <p class="hint" id="hint" aria-live="polite"></p>
+  </section>
+
+  <section id="done" class="screen" aria-live="polite">
+    <h1 id="thanks"></h1>
+    <div id="pick">
+      <p class="note" id="when"></p>
+      <div class="options" id="options"></div>
+    </div>
+    <ul class="details" id="details"></ul>
+    <p class="note" id="note"></p>
+    <button id="reply" type="button" hidden>Tell me you're coming</button>
+  </section>
+</main>
+
+<script>
+/* ===== Edit these ===== */
+const CONFIG = {
+  yourName: "Me",
+  partnerName: "babe",          // or share the link with ?to=TheirName
+  question: "Will you go out with me this weekend?",
+  date: "Saturday, 10 am",
+  options: ["Coffee shop ☕", "Shopping 🛍️", "Cinema date 🎬", "Lunch date 🍽️", "Surprise me 🎁"],
+  note: "I can't wait. My treat.",
+  phone: "",                    // optional, e.g. "6281234567890" (country code, no +) — enables the reply button
+};
+/* ====================== */
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const name = (params.get("to") || CONFIG.partnerName).slice(0, 40);
+
+$("hello").textContent = "Hey " + name + ", I have a question.";
+$("question").textContent = CONFIG.question;
+
+const lines = [
+  "Wait, are you sure?", "That button seems shy.", "Try the other one :)",
+  "Come on, it will be fun.", "I'll even pay.", "The No button is broken. Sorry!",
+  "Last chance to say yes."
+];
+let dodges = 0;
+const no = $("no"), yes = $("yes");
+
+function dodge(){
+  dodges++;
+  no.classList.add("free");
+  const pad = 12, w = no.offsetWidth, h = no.offsetHeight;
+  const x = pad + Math.random() * (window.innerWidth - w - pad * 2);
+  const y = pad + Math.random() * (window.innerHeight - h - pad * 2);
+  no.style.left = x + "px";
+  no.style.top = y + "px";
+  yes.style.setProperty("--grow", Math.min(1 + dodges * 0.12, 2));
+  $("hint").textContent = lines[Math.min(dodges - 1, lines.length - 1)];
+}
+["pointerenter","pointerdown","focus"].forEach(e => no.addEventListener(e, dodge));
+no.addEventListener("click", e => { e.preventDefault(); dodge(); });
+
+function hearts(){
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) return;
+  const set = ["💖","💗","✨","🌸","💕"];
+  for (let i = 0; i < 36; i++){
+    const el = document.createElement("span");
+    el.className = "heart";
+    el.textContent = set[i % set.length];
+    el.style.left = Math.random() * 100 + "vw";
+    el.style.fontSize = 18 + Math.random() * 22 + "px";
+    document.body.appendChild(el);
+    const drift = (Math.random() - .5) * 120;
+    el.animate(
+      [{transform:"translate(0,0) rotate(0)",opacity:1},
+       {transform:`translate(${drift}px,${window.innerHeight + 80}px) rotate(${drift * 3}deg)`,opacity:.9}],
+      {duration: 2600 + Math.random() * 2400, delay: Math.random() * 900, easing:"ease-in", fill:"forwards"}
+    ).onfinish = () => el.remove();
+  }
+}
+
+yes.addEventListener("click", () => {
+  $("ask").classList.remove("on");
+  no.classList.remove("free");
+  $("thanks").textContent = "Yay! It's a date.";
+  $("when").textContent = CONFIG.date + ". What should we do?";
+  const box = $("options"); box.innerHTML = "";
+  CONFIG.options.forEach(opt => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "opt"; b.textContent = opt;
+    b.addEventListener("click", () => choose(opt));
+    box.appendChild(b);
+  });
+  $("done").classList.add("on");
+  hearts();
+});
+
+function choose(plan){
+  $("pick").hidden = true;
+  $("thanks").textContent = "It's a plan.";
+  $("details").innerHTML = "";
+  [["When", CONFIG.date], ["Plan", plan]].forEach(([k, v]) => {
+    const li = document.createElement("li");
+    const b = document.createElement("b"); b.textContent = k + ": ";
+    li.append(b, document.createTextNode(v));
+    $("details").appendChild(li);
+  });
+  $("note").textContent = CONFIG.note;
+  if (CONFIG.phone){
+    const r = $("reply"); r.hidden = false;
+    r.onclick = () => {
+      const msg = "Yes! See you " + CONFIG.date + " for " + plan + " 💖";
+      window.open("https://wa.me/" + encodeURIComponent(CONFIG.phone) + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
+    };
+  }
+  hearts();
+}
+</script>
+</body>
+</html>
